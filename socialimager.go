@@ -6,8 +6,10 @@ import (
 	"github.com/fogleman/gg"
 	"image/color"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"strings"
+	"syscall"
 )
 
 func main() {
@@ -19,31 +21,46 @@ func main() {
 }
 
 func cli() error {
-	fmt.Println("For best results, ensure that your images are 1200x628.")
+	// setup a ctrl-c interrupt to cancel and exit the program
+	cancelled := setupCloseHandler()
 
+	// TODO: Let's add the ability to have a "default" flag
+	// This will pull from some config.yaml that will then fill in the blanks except for title
+
+	fmt.Println("Welcome to the Social Image Maker!")
+	fmt.Println("------------------------------------")
+	fmt.Println("For best results, ensure that your images are 1200x628.")
 	fmt.Println("Provide the image to set as the base. Put this in the 'backgroundImages' folder.")
 
-	backgroundImageName, err := getInputText(); if err != nil {
+	backgroundImageName, err := getInputText()
+	if err != nil {
 		return err
 	}
 
 	fmt.Println("Provide the domain text located in lower left of image.")
-	domainText, err := getInputText(); if err != nil {
+	domainText, err := getInputText()
+	if err != nil {
 		return err
 	}
 
 	fmt.Println("Provide a title for the main text in image.")
-	title, err := getInputText(); if err != nil {
+	title, err := getInputText()
+	if err != nil {
 		return err
 	}
 
 	fmt.Println("Provide a path and name for your image. Can just provide a name with extension.")
-	imageName, err := getInputText(); if err != nil {
+	imageName, err := getInputText()
+	if err != nil {
 		return err
 	}
 
-	if err := run(backgroundImageName, domainText, title, imageName); err != nil {
-		return err
+	if !cancelled {
+		if err := run(backgroundImageName, domainText, title, imageName); err != nil {
+			return err
+		}
+
+		fmt.Println("All done! Check for your new image at the path your provided!")
 	}
 
 	return nil
@@ -53,6 +70,8 @@ func cli() error {
 // if we access the binary, run CLI. Otherwise, export the method for others to use
 // here we will add parameters to customize the image
 func run(bgImageName string, domainText string, titleText string, imageName string) error {
+	// TODO: add handling for different sizes of images to be created
+	// We will need an image resize handler for this to work properly
 	dc := gg.NewContext(1200, 628)
 
 	backgroundImage, err := gg.LoadImage(filepath.Join("./", "backgroundImages", bgImageName))
@@ -116,8 +135,12 @@ func run(bgImageName string, domainText string, titleText string, imageName stri
 }
 
 func getInputText() (string, error) {
+	// prompt for input
+	fmt.Print(">> ")
+
 	reader := bufio.NewReader(os.Stdin)
-	text, err := reader.ReadString('\n'); if err != nil {
+	text, err := reader.ReadString('\n')
+	if err != nil {
 		return "", err
 	}
 
@@ -126,3 +149,18 @@ func getInputText() (string, error) {
 	return text, nil
 }
 
+// NOTE: This close handler does not seem to work in situations where a IDE handles the running of the app
+// It, however, works as intended in a terminal.
+func setupCloseHandler() bool {
+	c := make(chan os.Signal, 2)
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+	go func() bool {
+		<-c
+		fmt.Println("\r- Ctrl+C pressed in Terminal")
+		os.Exit(0)
+		return true
+	}()
+
+	//base case
+	return false
+}
