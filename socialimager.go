@@ -3,11 +3,13 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"github.com/disintegration/imaging"
 	"github.com/fogleman/gg"
 	"image/color"
 	"os"
 	"os/signal"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"syscall"
 )
@@ -37,6 +39,18 @@ func cli() error {
 		return err
 	}
 
+	fmt.Println("Enter a size for the image.")
+	fmt.Println("First, width:")
+	imageWidthStr, err := getInputText()
+	if err != nil {
+		return err
+	}
+	fmt.Println("Then, height:")
+	imageHeightStr, err := getInputText()
+	if err != nil {
+		return err
+	}
+
 	fmt.Println("Provide the domain text located in lower left of image.")
 	domainText, err := getInputText()
 	if err != nil {
@@ -56,11 +70,21 @@ func cli() error {
 	}
 
 	if !cancelled {
-		if err := run(backgroundImageName, domainText, title, imageName); err != nil {
+		imageWidth, err := strconv.Atoi(imageWidthStr)
+		if err != nil {
 			return err
 		}
 
-		fmt.Println("All done! Check for your new image at the path your provided!")
+		imageHeight, err := strconv.Atoi(imageHeightStr)
+		if err != nil {
+			return err
+		}
+
+		if err := run(backgroundImageName, domainText, title, imageName, imageWidth, imageHeight); err != nil {
+			return err
+		}
+
+		fmt.Println("All done! Check for your new image at the path you provided!")
 	}
 
 	return nil
@@ -69,16 +93,16 @@ func cli() error {
 // create a basic CLI that will prompt for input to create a new image
 // if we access the binary, run CLI. Otherwise, export the method for others to use
 // here we will add parameters to customize the image
-func run(bgImageName string, domainText string, titleText string, imageName string) error {
-	// TODO: add handling for different sizes of images to be created
-	// We will need an image resize handler for this to work properly
-	dc := gg.NewContext(1200, 628)
+func run(bgImageName string, domainText string, titleText string, imageName string, imageWidth int, imageHeight int) error {
+	dc := gg.NewContext(imageWidth, imageHeight)
 
 	backgroundImage, err := gg.LoadImage(filepath.Join("./", "backgroundImages", bgImageName))
 	if err != nil {
 		return err
 	}
-	dc.DrawImage(backgroundImage, 0, 0)
+	resizedImage := imaging.Resize(backgroundImage, imageWidth, imageHeight, imaging.Lanczos)
+
+	dc.DrawImage(resizedImage, 0, 0)
 
 	// NOTE!
 	// add any transforms to the image here before the save
