@@ -57,8 +57,20 @@ func cli() error {
 		return err
 	}
 
+	fmt.Println("What font size should I make this domain text?")
+	domainFontSizeStr, err := getInputText()
+	if err != nil {
+		return err
+	}
+
 	fmt.Println("Provide a title for the main text in image.")
 	title, err := getInputText()
+	if err != nil {
+		return err
+	}
+
+	fmt.Println("What font size should I make this domain text?")
+	titleFontSizeStr, err := getInputText()
 	if err != nil {
 		return err
 	}
@@ -80,7 +92,20 @@ func cli() error {
 			return err
 		}
 
-		if err := run(backgroundImageName, domainText, title, imageName, imageWidth, imageHeight); err != nil {
+		domainFontSizeInt, err := strconv.Atoi(domainFontSizeStr)
+		if err != nil {
+			return err
+		}
+		domainFontSize := float64(domainFontSizeInt)
+
+		titleFontSizeInt, err := strconv.Atoi(titleFontSizeStr)
+		if err != nil {
+			return err
+		}
+		titleFontSize := float64(titleFontSizeInt)
+
+		if err := run(backgroundImageName, domainText, title, imageName, imageWidth, imageHeight,
+			domainFontSize, titleFontSize); err != nil {
 			return err
 		}
 
@@ -93,7 +118,10 @@ func cli() error {
 // create a basic CLI that will prompt for input to create a new image
 // if we access the binary, run CLI. Otherwise, export the method for others to use
 // here we will add parameters to customize the image
-func run(bgImageName string, domainText string, titleText string, imageName string, imageWidth int, imageHeight int) error {
+
+// the original measurements were 1200x628 with domain font size of 80 and title font size of 90
+func run(bgImageName string, domainText string, titleText string, imageName string, imageWidth int, imageHeight int,
+	domainFontSize float64, titleFontSize float64) error {
 	dc := gg.NewContext(imageWidth, imageHeight)
 
 	backgroundImage, err := gg.LoadImage(filepath.Join("./", "backgroundImages", bgImageName))
@@ -121,7 +149,7 @@ func run(bgImageName string, domainText string, titleText string, imageName stri
 
 	// first add to bottom righthand for domain name
 	fontPath := filepath.Join("fonts", "FiraCode-Regular.ttf")
-	if err := dc.LoadFontFace(fontPath, 80); err != nil {
+	if err := dc.LoadFontFace(fontPath, domainFontSize); err != nil {
 		return err
 	}
 	dc.SetColor(color.White)
@@ -138,7 +166,7 @@ func run(bgImageName string, domainText string, titleText string, imageName stri
 	textShadowColor := color.Black
 	textColor := color.White
 	fontPath = filepath.Join("fonts", "FiraCode-Bold.ttf")
-	if err := dc.LoadFontFace(fontPath, 90); err != nil {
+	if err := dc.LoadFontFace(fontPath, titleFontSize); err != nil {
 		return err
 	}
 	textRightMargin := 60.0
