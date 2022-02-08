@@ -15,15 +15,19 @@ import (
 )
 
 func main() {
-
 	if err := cli(); err != nil {
 		fmt.Fprintf(os.Stderr, "%s\n", err)
 		os.Exit(1)
 	}
 }
 
+//TODO: clean up the project.
+//  - clean up folders and images; create folders on run
+//  - default to outputting to a target folder
+//  - default to reading from bg images but allow for full path to image
+
 func cli() error {
-	// setup a ctrl-c interrupt to cancel and exit the program
+	// set up a ctrl-c interrupt to cancel and exit the program
 	cancelled := setupCloseHandler()
 
 	// TODO: Let's add the ability to have a "default" flag
@@ -119,7 +123,7 @@ func run(bgImageName string, domainText string, titleText string, imageName stri
 
 	// add text
 
-	// first add to bottom righthand for domain name
+	// first add to bottom right-hand for domain name
 	fontPath := filepath.Join("fonts", "FiraCode-Regular.ttf")
 	if err := dc.LoadFontFace(fontPath, 80); err != nil {
 		return err
@@ -173,7 +177,7 @@ func getInputText() (string, error) {
 	return text, nil
 }
 
-// NOTE: This close handler does not seem to work in situations where a IDE handles the running of the app
+// NOTE: This close handler does not seem to work in situations where an IDE handles the running of the app
 // It, however, works as intended in a terminal.
 func setupCloseHandler() bool {
 	c := make(chan os.Signal, 2)
